@@ -7,6 +7,7 @@
 # -T COLOR  text color name or #RRGGBB
 # -B COLOR  background color name or #RRGGBB
 # -t TITLE  popup title (default "Notification")
+# stdin     message content (used when -m not supplied)
 
 set -euo pipefail
 
@@ -21,6 +22,7 @@ ESC_START=""
 ESC_RESET=""
 ESC_FG=""
 ESC_BG=""
+MSG_SET=false
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -59,7 +61,10 @@ hex_to_rgb() {
 
 while getopts ":m:l:d:cCT:B:t:" opt; do
   case "$opt" in
-  m) MSG="$OPTARG" ;;
+  m)
+    MSG="$OPTARG"
+    MSG_SET=true
+    ;;
   l) LEN="$OPTARG" ;;
   d) DELAY="$OPTARG" ;;
   c) CENTER=true ;;
@@ -77,6 +82,14 @@ while getopts ":m:l:d:cCT:B:t:" opt; do
     ;;
   esac
 done
+
+if ! $MSG_SET && [[ ! -t 0 ]]; then
+  READ_STDIN="$(cat)"
+  if [[ -n $READ_STDIN ]]; then
+    MSG="$READ_STDIN"
+    MSG_SET=true
+  fi
+fi
 
 # Pick colors
 if [[ -n $BG_COLOR ]]; then
