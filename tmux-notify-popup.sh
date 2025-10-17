@@ -124,11 +124,14 @@ fi
 X_POS=$((CLIENT_WIDTH - WIDTH - 1))
 ((X_POS < 0)) && X_POS=0
 
-CONTENT=$(printf "%s\n" "${LINES[@]}")
+CONTENT=$( (
+  IFS=$'\n'
+  printf "%s" "${LINES[*]}"
+))
 
 # Open popup at top-right; keep the command alive until we clear it
 tmux display-popup -b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT" \
-  "printf '%s\n' \"$CONTENT\"; sleep 9999" &
+  "printf '%s' \"$CONTENT\"; sleep 9999" &
 
 # Auto-clear after delay
 (
