@@ -6,6 +6,7 @@
 # -c        center text (default; use -C to disable)
 # -T COLOR  text color name or #RRGGBB
 # -B COLOR  background color name or #RRGGBB
+# -O COLOR  border color name or #RRGGBB
 # -i ICON   emoji or string placed top-left of popup
 # -I POS    icon position: left (default) or right
 # -t TITLE  popup title (default "Notification")
@@ -21,11 +22,13 @@ CENTER=true
 TITLE=""
 TEXT_COLOR=""
 BG_COLOR=""
+BORDER_COLOR=""
 ICON=""
 ICON_POSITION="left"
 MSG_SET=false
 STYLE_PREFIX=""
 STYLE_SUFFIX=""
+BORDER_STYLE=""
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -95,7 +98,7 @@ setup_icon_padding() {
   esac
 }
 
-while getopts ":m:l:d:cCT:B:t:i:I:" opt; do
+while getopts ":m:l:d:cCT:B:O:t:i:I:" opt; do
   case "$opt" in
   m)
     MSG="$OPTARG"
@@ -107,6 +110,7 @@ while getopts ":m:l:d:cCT:B:t:i:I:" opt; do
   C) CENTER=false ;;
   T) TEXT_COLOR="$OPTARG" ;;
   B) BG_COLOR="$OPTARG" ;;
+  O) BORDER_COLOR="$OPTARG" ;;
   t) TITLE="$OPTARG" ;;
   i) ICON="$OPTARG" ;;
   I) ICON_POSITION="$OPTARG" ;;
@@ -167,6 +171,12 @@ if [[ -n $STYLE_PREFIX ]]; then
   STYLE_SUFFIX=$'\e[0m'
 fi
 
+BORDER_STYLE=""
+if [[ -n $BORDER_COLOR ]]; then
+  BORDER_HEX="$(pick_color "$BORDER_COLOR")"
+  BORDER_STYLE="fg=${BORDER_HEX}"
+fi
+
 HIDE_CURSOR=$(printf '\e[?25l')
 
 setup_icon_padding
@@ -214,8 +224,11 @@ CONTENT=$( (
 ))
 
 # Open popup at top-right; keep the command alive until we clear it
-tmux display-popup -b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT" \
-  "printf '%s' \"$CONTENT\";  sleep 9999" &
+DISPLAY_ARGS=(-b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT")
+if [[ -n $BORDER_STYLE ]]; then
+  DISPLAY_ARGS+=(-S "$BORDER_STYLE")
+fi
+tmux display-popup "${DISPLAY_ARGS[@]}" "printf '%s' \"$CONTENT\";  sleep 9999" &
 
 # Auto-clear after delay
 if [[ $DELAY -gt 0 ]]; then
