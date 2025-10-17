@@ -11,6 +11,17 @@
 # -I POS    icon position: left (default) or right
 # -t TITLE  popup title (default "Notification")
 # stdin     message content (used when -m not supplied)
+#
+# -x POS    x position of notification (default=0, top of terminal)
+# -y POS    y position of notification (default is right side of terminal, calculated)
+#
+#    Value    Flag    Meaning
+#    C        Both    The centre of the terminal
+#    R        -x      The right side of the terminal
+#    P        Both    The bottom left of the pane
+#    M        Both    The mouse position
+#    W        Both    The window position on the status line
+#    S        -y      The line above or below the status line
 
 set -euo pipefail
 
@@ -28,6 +39,37 @@ ICON_POSITION="left"
 MSG_SET=false
 BORDER_STYLE=""
 POPUP_STYLE=""
+X_POS=""
+Y_POS=""
+
+usage() {
+  cat <<'EOF'
+tmux-notify-popup: janky notifications using tmux display-popup
+Usage: tmux-notify-popup -m "Message..." [-ldCcbBiItxy]
+-l LEN    wrap width (default 30, accepts e.g. 40%)
+-d SEC    auto-clear delay in seconds (default 3)
+-C        don't center text
+-c COLOR  text color name or #RRGGBB
+-b COLOR  background color name or #RRGGBB
+-B COLOR  border color name or #RRGGBB
+-i ICON   emoji or string placed top-left of popup
+-I POS    icon position: left (default) or right
+-t TITLE  popup title (default "Notification")
+stdin     message content (used when -m not supplied)
+
+-x POS    x position of notification (default=0, top of terminal)
+-y POS    y position of notification (default is right side of terminal, calculated)
+
+   Value    Flag    Meaning
+   C        Both    The centre of the terminal
+   R        -x      The right side of the terminal
+   P        Both    The bottom left of the pane
+   M        Both    The mouse position
+   W        Both    The window position on the status line
+   S        -y      The line above or below the status line
+   n%       Both    A percentage of the terminal (50% center)
+EOF
+}
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -99,7 +141,7 @@ setup_icon_padding() {
   esac
 }
 
-while getopts ":m:l:d:Cc:b:B:t:i:I:" opt; do
+while getopts ":m:l:d:Cc:b:B:t:i:I:x:y:h" opt; do
   case "$opt" in
   m)
     MSG="$OPTARG"
@@ -114,12 +156,20 @@ while getopts ":m:l:d:Cc:b:B:t:i:I:" opt; do
   t) TITLE="$OPTARG" ;;
   i) ICON="$OPTARG" ;;
   I) ICON_POSITION="$OPTARG" ;;
+  x) X_POS="$OPTARG" ;;
+  y) Y_POS="$OPTARG" ;;
+  h)
+    usage
+    exit 0
+    ;;
   :)
     printf 'Option -%s requires an argument\n' "$OPTARG" >&2
+    usage
     exit 1
     ;;
   \?)
     printf 'Unknown option: -%s\n' "$OPTARG" >&2
+    usage
     exit 1
     ;;
   esac
@@ -215,15 +265,21 @@ done
 WIDTH=$((LEN + ICON_PAD_WIDTH + 2))
 HEIGHT=$((${#LINES[@]} + 2))
 
-X_POS=$((CLIENT_WIDTH - WIDTH - 1))
-((X_POS < 0)) && X_POS=0
+if [[ -z $X_POS ]]; then
+  X_POS=$((CLIENT_WIDTH - WIDTH - 1))
+  ((X_POS < 0)) && X_POS=0
+fi
+
+if [[ -z $Y_POS ]]; then
+  Y_POS=0
+fi
 
 CONTENT=$( (
   IFS=$'\n'
   printf "%s" "${LINES[*]}"
 ))
 
-DISPLAY_ARGS=(-b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT")
+DISPLAY_ARGS=(-b "rounded" -T "$TITLE" -x "$X_POS" -y "$Y_POS" -w "$WIDTH" -h "$HEIGHT")
 if [[ -n $POPUP_STYLE ]]; then
   DISPLAY_ARGS+=(-s "$POPUP_STYLE")
 fi
