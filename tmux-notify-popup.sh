@@ -5,8 +5,8 @@
 # -d SEC    auto-clear delay in seconds (default 3)
 # -c        center text (default; use -C to disable)
 # -T COLOR  text color name or #RRGGBB
-# -B COLOR  background color name or #RRGGBB
-# -O COLOR  border color name or #RRGGBB
+# -b COLOR  background color name or #RRGGBB
+# -B COLOR  border color name or #RRGGBB
 # -i ICON   emoji or string placed top-left of popup
 # -I POS    icon position: left (default) or right
 # -t TITLE  popup title (default "Notification")
@@ -26,9 +26,8 @@ BORDER_COLOR=""
 ICON=""
 ICON_POSITION="left"
 MSG_SET=false
-STYLE_PREFIX=""
-STYLE_SUFFIX=""
 BORDER_STYLE=""
+POPUP_STYLE=""
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -51,6 +50,8 @@ pick_color() {
   light-cyan) echo "#99d1db" ;;
   grey) echo "#6c6f85" ;;
   light-grey) echo "#a5adce" ;;
+  gray) echo "#6c6f85" ;;
+  light-gray) echo "#a5adce" ;;
   white) echo "#c6d0f5" ;;
   black) echo "#181926" ;;
   *)
@@ -98,7 +99,7 @@ setup_icon_padding() {
   esac
 }
 
-while getopts ":m:l:d:cCT:B:O:t:i:I:" opt; do
+while getopts ":m:l:d:cCT:b:B:t:i:I:" opt; do
   case "$opt" in
   m)
     MSG="$OPTARG"
@@ -109,8 +110,8 @@ while getopts ":m:l:d:cCT:B:O:t:i:I:" opt; do
   c) CENTER=true ;;
   C) CENTER=false ;;
   T) TEXT_COLOR="$OPTARG" ;;
-  B) BG_COLOR="$OPTARG" ;;
-  O) BORDER_COLOR="$OPTARG" ;;
+  b) BG_COLOR="$OPTARG" ;;
+  B) BORDER_COLOR="$OPTARG" ;;
   t) TITLE="$OPTARG" ;;
   i) ICON="$OPTARG" ;;
   I) ICON_POSITION="$OPTARG" ;;
@@ -159,16 +160,16 @@ else
 fi
 
 # Pick colors
-if [[ -n $TEXT_COLOR ]]; then
-  STYLE_PREFIX+=$(printf '\e[38;2;%sm' "$(hex_to_rgb "$(pick_color "$TEXT_COLOR")")")
-fi
-
+POPUP_STYLE=""
 if [[ -n $BG_COLOR ]]; then
-  STYLE_PREFIX+=$(printf '\e[48;2;%sm' "$(hex_to_rgb "$(pick_color "$BG_COLOR")")")
+  POPUP_STYLE="bg=$(pick_color "$BG_COLOR")"
 fi
-
-if [[ -n $STYLE_PREFIX ]]; then
-  STYLE_SUFFIX=$'\e[0m'
+if [[ -n $TEXT_COLOR ]]; then
+  if [[ -n $POPUP_STYLE ]]; then
+    POPUP_STYLE+=",fg=$(pick_color "$TEXT_COLOR")"
+  else
+    POPUP_STYLE="fg=$(pick_color "$TEXT_COLOR")"
+  fi
 fi
 
 BORDER_STYLE=""
@@ -208,7 +209,7 @@ for idx in "${!RAW_LINES[@]}"; do
     prefix=""
     suffix=""
   fi
-  LINES+=("${HIDE_CURSOR}${STYLE_PREFIX}${prefix}${line}${suffix}${STYLE_SUFFIX}")
+  LINES+=("${HIDE_CURSOR}${prefix}${line}${suffix}")
 done
 
 # Dimensions (tiny padding)
@@ -225,6 +226,9 @@ CONTENT=$( (
 
 # Open popup at top-right; keep the command alive until we clear it
 DISPLAY_ARGS=(-b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT")
+if [[ -n $POPUP_STYLE ]]; then
+  DISPLAY_ARGS+=(-s "$POPUP_STYLE")
+fi
 if [[ -n $BORDER_STYLE ]]; then
   DISPLAY_ARGS+=(-S "$BORDER_STYLE")
 fi
