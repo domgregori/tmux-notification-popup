@@ -171,8 +171,6 @@ HIDE_CURSOR=$(printf '\e[?25l')
 
 setup_icon_padding
 
-TOTAL_WIDTH=$((LEN + ICON_PAD_WIDTH))
-
 # Wrap and center lines
 mapfile -t RAW_LINES < <(printf "%s" "$MSG" | fold -s -w "$LEN")
 if ((${#RAW_LINES[@]} == 0)); then
@@ -183,7 +181,7 @@ for idx in "${!RAW_LINES[@]}"; do
   line="${RAW_LINES[$idx]}"
   if $CENTER; then
     line_len=${#line}
-    pad=$(((TOTAL_WIDTH - line_len) / 2 - ICON_PAD_WIDTH))
+    pad=$(((LEN - line_len) / 2))
     ((pad < 0)) && pad=0
     line="$(printf "%*s%s" "$pad" "" "$line")"
   fi
