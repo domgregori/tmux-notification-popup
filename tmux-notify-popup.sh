@@ -3,8 +3,8 @@
 # Usage: tmux-notify-popup -m "Message..." [-l 40] [-d 3] [-t "Title"]
 # -l LEN    wrap width (default 30, accepts e.g. 40%)
 # -d SEC    auto-clear delay in seconds (default 3)
-# -c        center text (default; use -C to disable)
-# -T COLOR  text color name or #RRGGBB
+# -C        don't center text
+# -c COLOR  text color name or #RRGGBB
 # -b COLOR  background color name or #RRGGBB
 # -B COLOR  border color name or #RRGGBB
 # -i ICON   emoji or string placed top-left of popup
@@ -99,7 +99,7 @@ setup_icon_padding() {
   esac
 }
 
-while getopts ":m:l:d:cCT:b:B:t:i:I:" opt; do
+while getopts ":m:l:d:Cc:b:B:t:i:I:" opt; do
   case "$opt" in
   m)
     MSG="$OPTARG"
@@ -107,9 +107,8 @@ while getopts ":m:l:d:cCT:b:B:t:i:I:" opt; do
     ;;
   l) LEN_SPEC="$OPTARG" ;;
   d) DELAY="$OPTARG" ;;
-  c) CENTER=true ;;
   C) CENTER=false ;;
-  T) TEXT_COLOR="$OPTARG" ;;
+  c) TEXT_COLOR="$OPTARG" ;;
   b) BG_COLOR="$OPTARG" ;;
   B) BORDER_COLOR="$OPTARG" ;;
   t) TITLE="$OPTARG" ;;
@@ -224,7 +223,6 @@ CONTENT=$( (
   printf "%s" "${LINES[*]}"
 ))
 
-# Open popup at top-right; keep the command alive until we clear it
 DISPLAY_ARGS=(-b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT")
 if [[ -n $POPUP_STYLE ]]; then
   DISPLAY_ARGS+=(-s "$POPUP_STYLE")
@@ -232,7 +230,9 @@ fi
 if [[ -n $BORDER_STYLE ]]; then
   DISPLAY_ARGS+=(-S "$BORDER_STYLE")
 fi
-tmux display-popup "${DISPLAY_ARGS[@]}" "printf '%s' \"$CONTENT\";  sleep 9999" &
+
+DISPLAY_CMD=('sh' '-c' 'printf %s "$1"; sleep 9999' 'tmux-notify' "$CONTENT")
+tmux display-popup "${DISPLAY_ARGS[@]}" "${DISPLAY_CMD[@]}" &
 
 # Auto-clear after delay
 if [[ $DELAY -gt 0 ]]; then
