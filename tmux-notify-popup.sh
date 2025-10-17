@@ -12,8 +12,8 @@
 # -t TITLE  popup title (default "Notification")
 # stdin     message content (used when -m not supplied)
 #
-# -x POS    x position of notification (default=0, top of terminal)
-# -y POS    y position of notification (default is right side of terminal, calculated)
+#-x POS    x position of notification (default is right side of terminal, calculated)
+#-y POS    y position of notification (default=0, top of terminal)
 #
 #    Value    Flag    Meaning
 #    C        Both    The centre of the terminal
@@ -57,8 +57,8 @@ Usage: tmux-notify-popup -m "Message..." [-ldCcbBiItxy]
 -t TITLE  popup title (default "Notification")
 stdin     message content (used when -m not supplied)
 
--x POS    x position of notification (default=0, top of terminal)
--y POS    y position of notification (default is right side of terminal, calculated)
+-x POS    x position of notification (default is right side of terminal, calculated)
+-y POS    y position of notification (default=0, top of terminal)
 
    Value    Flag    Meaning
    C        Both    The centre of the terminal
@@ -222,9 +222,13 @@ if [[ -n $TEXT_COLOR ]]; then
 fi
 
 BORDER_STYLE=""
+# makes rounded borders look bad
+# if [[ -n $BG_COLOR ]]; then
+#   BORDER_STYLE="bg=$(pick_color "$BG_COLOR"),"
+# fi
 if [[ -n $BORDER_COLOR ]]; then
   BORDER_HEX="$(pick_color "$BORDER_COLOR")"
-  BORDER_STYLE="fg=${BORDER_HEX}"
+  BORDER_STYLE+="fg=${BORDER_HEX}"
 fi
 
 HIDE_CURSOR=$(printf '\e[?25l')
