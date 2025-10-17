@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tmux-notify-popup: janky notifications using tmux display-popup
 # Usage: tmux-notify-popup -m "Message..." [-l 40] [-d 3] [-t "Title"]
-# -l LEN    wrap width (default 30)
+# -l LEN    wrap width (default 30, accepts e.g. 40%)
 # -d SEC    auto-clear delay in seconds (default 3)
 # -c        center text (default; use -C to disable)
 # -T COLOR  text color name or #RRGGBB
@@ -11,6 +11,7 @@
 
 set -euo pipefail
 
+LEN_SPEC=30
 LEN=30
 DELAY=3
 MSG="Notification"
@@ -21,6 +22,7 @@ BG_COLOR=""
 MSG_SET=false
 STYLE_PREFIX=""
 STYLE_SUFFIX=""
+SHOW_CURSOR=$'\e[?25h'
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -63,7 +65,7 @@ while getopts ":m:l:d:cCT:B:t:" opt; do
     MSG="$OPTARG"
     MSG_SET=true
     ;;
-  l) LEN="$OPTARG" ;;
+  l) LEN_SPEC="$OPTARG" ;;
   d) DELAY="$OPTARG" ;;
   c) CENTER=true ;;
   C) CENTER=false ;;
@@ -89,6 +91,23 @@ if ! $MSG_SET && [[ ! -t 0 ]]; then
   fi
 fi
 
+if ! CLIENT_WIDTH=$(tmux display-message -p '#{client_width}' 2>/dev/null); then
+  printf 'tmux-notify-popup: must be run inside an active tmux client\n' >&2
+  exit 1
+fi
+
+if [[ $LEN_SPEC =~ ^([0-9]+)%$ ]]; then
+  PERCENT_VALUE=${BASH_REMATCH[1]}
+  LEN=$((CLIENT_WIDTH * PERCENT_VALUE / 100))
+  ((LEN < 1)) && LEN=1
+elif [[ $LEN_SPEC =~ ^[0-9]+$ ]]; then
+  LEN=$LEN_SPEC
+  ((LEN < 1)) && LEN=1
+else
+  printf 'Invalid length: %s\n' "$LEN_SPEC" >&2
+  exit 1
+fi
+
 # Pick colors
 if [[ -n $TEXT_COLOR ]]; then
   STYLE_PREFIX+=$(printf '\e[38;2;%sm' "$(hex_to_rgb "$(pick_color "$TEXT_COLOR")")")
@@ -103,7 +122,6 @@ if [[ -n $STYLE_PREFIX ]]; then
 fi
 
 HIDE_CURSOR=$(printf '\e[?25l')
-SHOW_CURSOR=$(printf '\e[?25h')
 
 # Wrap and center lines
 mapfile -t RAW_LINES < <(printf "%s" "$MSG" | fold -s -w "$LEN")
@@ -124,11 +142,6 @@ done
 WIDTH=$((LEN + 2))
 HEIGHT=$((${#LINES[@]} + 2))
 
-if ! CLIENT_WIDTH=$(tmux display-message -p '#{client_width}' 2>/dev/null); then
-  printf 'tmux-notify-popup: must be run inside an active tmux client\n' >&2
-  exit 1
-fi
-
 X_POS=$((CLIENT_WIDTH - WIDTH - 1))
 ((X_POS < 0)) && X_POS=0
 
@@ -139,7 +152,7 @@ CONTENT=$( (
 
 # Open popup at top-right; keep the command alive until we clear it
 tmux display-popup -b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HEIGHT" \
-  "printf '%s' \"$CONTENT\"; sleep 9999" &
+  "printf '%s' \"$CONTENT\";  sleep 9999" &
 
 # Auto-clear after delay
 if [[ $DELAY -gt 0 ]]; then
