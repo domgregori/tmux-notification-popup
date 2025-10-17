@@ -57,7 +57,7 @@ echo "Build finished successfully" | tmux-notify-popup.sh
 
 ```sh
 tmux-notify-popup.sh -m "Tests failed" \
-  -c white -b "#a60000" -B black -t "CI Alert"
+  -c white -b "#a60000" -B green -t "CI Alert"
 ```
 
 **Add an icon on the right and keep it open until dismissed:**
