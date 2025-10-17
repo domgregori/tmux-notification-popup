@@ -18,11 +18,9 @@ CENTER=true
 TITLE=""
 TEXT_COLOR=""
 BG_COLOR=""
-ESC_START=""
-ESC_RESET=""
-ESC_FG=""
-ESC_BG=""
 MSG_SET=false
+STYLE_PREFIX=""
+STYLE_SUFFIX=""
 
 pick_color() {
   if [[ $1 =~ ^#?[0-9A-Fa-f]{6}$ ]]; then
@@ -92,23 +90,20 @@ if ! $MSG_SET && [[ ! -t 0 ]]; then
 fi
 
 # Pick colors
-if [[ -n $BG_COLOR ]]; then
-  BG_HEX="$(pick_color "$BG_COLOR")"
-  BG_RGB=$(hex_to_rgb "$BG_HEX")
-  printf -v ESC_BG "%b" "\e[48;2;${BG_RGB}m"
-  ESC_RESET=${ESC_RESET:-$'\e[0m'}
-fi
-
 if [[ -n $TEXT_COLOR ]]; then
-  TEXT_HEX="$(pick_color "$TEXT_COLOR")"
-  TEXT_RGB=$(hex_to_rgb "$TEXT_HEX")
-  printf -v ESC_FG "%b" "\e[38;2;${TEXT_RGB}m"
-  ESC_RESET=${ESC_RESET:-$'\e[0m'}
+  STYLE_PREFIX+=$(printf '\e[38;2;%sm' "$(hex_to_rgb "$(pick_color "$TEXT_COLOR")")")
 fi
 
-if [[ -n $ESC_FG || -n $ESC_BG ]]; then
-  ESC_START="${ESC_FG}${ESC_BG}"
+if [[ -n $BG_COLOR ]]; then
+  STYLE_PREFIX+=$(printf '\e[48;2;%sm' "$(hex_to_rgb "$(pick_color "$BG_COLOR")")")
 fi
+
+if [[ -n $STYLE_PREFIX ]]; then
+  STYLE_SUFFIX=$'\e[0m'
+fi
+
+HIDE_CURSOR=$(printf '\e[?25l')
+SHOW_CURSOR=$(printf '\e[?25h')
 
 # Wrap and center lines
 mapfile -t RAW_LINES < <(printf "%s" "$MSG" | fold -s -w "$LEN")
@@ -122,7 +117,7 @@ for line in "${RAW_LINES[@]}"; do
     ((pad < 0)) && pad=0
     line="$(printf "%*s%s" "$pad" "" "$line")"
   fi
-  LINES+=("${ESC_START}$(printf "%-${LEN}s" "$line")${ESC_RESET}")
+  LINES+=("${HIDE_CURSOR}${STYLE_PREFIX}$(printf "%-${LEN}s" "$line")${STYLE_SUFFIX}")
 done
 
 # Dimensions (tiny padding)
@@ -147,7 +142,9 @@ tmux display-popup -b "rounded" -T "$TITLE" -x "$X_POS" -y 0 -w "$WIDTH" -h "$HE
   "printf '%s' \"$CONTENT\"; sleep 9999" &
 
 # Auto-clear after delay
-(
-  sleep "$DELAY"
-  tmux display-popup -C
-) >/dev/null 2>&1 &
+if [[ $DELAY -gt 0 ]]; then
+  (
+    sleep "$DELAY"
+    tmux display-popup -C
+  ) >/dev/null 2>&1 &
+fi
