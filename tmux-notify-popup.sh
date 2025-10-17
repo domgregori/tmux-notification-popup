@@ -34,22 +34,22 @@ pick_color() {
   fi
 
   case "$1" in
-  red) echo "#cc4444" ;;
-  light-red) echo "#ff6666" ;;
-  yellow) echo "#ccaa33" ;;
-  light-yellow) echo "#ffee66" ;;
-  green) echo "#44aa44" ;;
-  light-green) echo "#66ff99" ;;
-  magenta) echo "#aa44aa" ;;
-  light-magenta) echo "#ff88ff" ;;
-  blue) echo "#4477cc" ;;
-  light-blue) echo "#66aaff" ;;
-  cyan) echo "#44aaaa" ;;
-  light-cyan) echo "#77ffff" ;;
-  grey) echo "#777777" ;;
-  light-grey) echo "#bbbbbb" ;;
-  white) echo "#dddddd" ;;
-  black) echo "#111111" ;;
+  red) echo "#d20f39" ;;
+  light-red) echo "#e78284" ;;
+  yellow) echo "#df8e1d" ;;
+  light-yellow) echo "#e5c890" ;;
+  green) echo "#40a02b" ;;
+  light-green) echo "#a6d189" ;;
+  magenta) echo "#e64553" ;;
+  light-magenta) echo "#ea999c" ;;
+  blue) echo "#1e66f5" ;;
+  light-blue) echo "#8caaee" ;;
+  cyan) echo "#04a5e5" ;;
+  light-cyan) echo "#99d1db" ;;
+  grey) echo "#6c6f85" ;;
+  light-grey) echo "#a5adce" ;;
+  white) echo "#c6d0f5" ;;
+  black) echo "#181926" ;;
   *)
     printf 'Unknown color: %s\n' "$1" >&2
     exit 2
