@@ -2,6 +2,8 @@
 
 `tmux-notify-popup.sh` is a lightweight helper that turns `tmux display-popup` into a quick notification panel. Pipe text into it or pass a message with flags and it renders a styled popup in the current tmux client.
 
+The one issue is that it steals focus while it's visible. If anyone has an idea how to stop this behavior, let me know or pull request! :)
+
 ## Requirements
 
 - tmux ≥ 3.2 with `display-popup` support.
